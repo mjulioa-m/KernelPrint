@@ -30,4 +30,15 @@ public sealed record WaitForOptions
     public int NetworkIdleMs { get; init; } = 500;
     public int FontsReadyTimeoutMs { get; init; } = 5_000;
     public int MaxRenderTimeoutMs { get; init; } = 30_000;
+
+    /// <summary>
+    /// Optional Playwright selector to wait for before printing (e.g. "#invoice-root").
+    /// </summary>
+    public string? ReadySelector { get; init; }
+
+    /// <summary>
+    /// Optional JS expression evaluated in page context that must become truthy before printing.
+    /// Example: "window.__KERNELPRINT_READY__ === true"
+    /// </summary>
+    public string? ReadyExpression { get; init; }
 }

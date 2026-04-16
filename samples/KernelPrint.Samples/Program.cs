@@ -3,9 +3,15 @@ using KernelPrint.Engine;
 using KernelPrint.Engine.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
+using System.Net.Sockets;
+using System.Text;
 
 var services = new ServiceCollection()
-    .AddKernelPrintEngine()
+    .AddKernelPrintEngine(options =>
+    {
+        // Local demo server uses 127.0.0.1; keep data: URLs disabled like production defaults.
+        options.Templates.AllowedHosts = ["127.0.0.1", "localhost"];
+    })
     .BuildServiceProvider();
 
 var printService = services.GetRequiredService<IPrintService>();
@@ -179,11 +185,37 @@ var templateHtml =
           {{rowsHtml}}
         </tbody>
       </table>
+      <script>
+        window.addEventListener("kernelprint:data-ready", () => {
+          window.__KERNELPRINT_READY__ = true;
+        });
+
+        // Static templates are ready immediately.
+        window.__KERNELPRINT_READY__ = true;
+      </script>
     </body>
     </html>
     """;
 
-var templateUrl = $"data:text/html;charset=utf-8,{WebUtility.UrlEncode(templateHtml)}";
+using var http = new HttpListener();
+var port = GetFreeTcpPort();
+http.Prefixes.Add($"http://127.0.0.1:{port}/");
+http.Start();
+
+var templateUrl = $"http://127.0.0.1:{port}/";
+
+_ = Task.Run(async () =>
+{
+    while (http.IsListening)
+    {
+        var context = await http.GetContextAsync();
+        var buffer = Encoding.UTF8.GetBytes(templateHtml);
+        context.Response.ContentType = "text/html; charset=utf-8";
+        context.Response.ContentLength64 = buffer.Length;
+        await context.Response.OutputStream.WriteAsync(buffer);
+        context.Response.Close();
+    }
+});
 
 var request = new PrintRequest
 {
@@ -197,3 +229,14 @@ await File.WriteAllBytesAsync(outputPath, result.Bytes);
 Console.WriteLine($"Generado ContentType: {result.ContentType}, Bytes: {result.Bytes.Length}, TotalMs: {result.Timings.TotalMs}");
 Console.WriteLine($"Filas renderizadas: {result.Metadata.GetValueOrDefault("renderedRows", "n/a")}");
 Console.WriteLine($"Archivo PDF: {outputPath}");
+
+http.Stop();
+
+static int GetFreeTcpPort()
+{
+    var listener = new TcpListener(IPAddress.Loopback, 0);
+    listener.Start();
+    var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+    listener.Stop();
+    return port;
+}

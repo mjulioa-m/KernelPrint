@@ -5,13 +5,15 @@ using System.Threading;
 
 namespace KernelPrint.Engine.Runtime;
 
-internal sealed class BrowserPool : IBrowserPool, IAsyncDisposable
+public sealed class BrowserPool : IBrowserPool, IAsyncDisposable
 {
     private readonly KernelPrintEngineOptions _options;
     private readonly SemaphoreSlim _semaphore;
     private readonly SemaphoreSlim _startupLock = new(1, 1);
     private IPlaywright? _playwright;
     private IBrowser? _browser;
+    private DateTimeOffset _browserCreatedUtc;
+    private int _successfulJobsSinceRecycle;
 
     public BrowserPool(IOptions<KernelPrintEngineOptions> options)
     {
@@ -26,15 +28,96 @@ internal sealed class BrowserPool : IBrowserPool, IAsyncDisposable
         await _semaphore.WaitAsync(cancellationToken);
         try
         {
+            await MaybeRecycleBrowserAsync(cancellationToken);
+
             var browser = await EnsureBrowserAsync(cancellationToken);
             await using var context = await browser.NewContextAsync();
             var page = await context.NewPageAsync();
-            return await action(page);
+
+            try
+            {
+                var result = await action(page);
+                Interlocked.Increment(ref _successfulJobsSinceRecycle);
+                return result;
+            }
+            catch
+            {
+                // A template crash can poison Chromium; recycle defensively.
+                await ResetAsync(cancellationToken);
+                throw;
+            }
         }
         finally
         {
             _semaphore.Release();
         }
+    }
+
+    public async Task<bool> IsReadyAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _semaphore.WaitAsync(cancellationToken);
+            try
+            {
+                var browser = await EnsureBrowserAsync(cancellationToken);
+                await using var context = await browser.NewContextAsync();
+                var page = await context.NewPageAsync();
+                await page.GotoAsync("about:blank", new PageGotoOptions
+                {
+                    WaitUntil = WaitUntilState.DOMContentLoaded,
+                    Timeout = Math.Min(10_000, _options.BrowserLaunchTimeoutMs)
+                });
+                return true;
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task ResetAsync(CancellationToken cancellationToken = default)
+    {
+        await _startupLock.WaitAsync(cancellationToken);
+        try
+        {
+            await DisposeBrowserCoreAsync();
+            Interlocked.Exchange(ref _successfulJobsSinceRecycle, 0);
+        }
+        finally
+        {
+            _startupLock.Release();
+        }
+    }
+
+    private async Task MaybeRecycleBrowserAsync(CancellationToken cancellationToken)
+    {
+        var shouldRecycle = false;
+
+        if (_options.BrowserRecycleAfterJobs > 0 &&
+            Volatile.Read(ref _successfulJobsSinceRecycle) >= _options.BrowserRecycleAfterJobs)
+        {
+            shouldRecycle = true;
+        }
+
+        if (_options.BrowserRecycleAfterMinutes > 0 &&
+            _browser is not null &&
+            DateTimeOffset.UtcNow - _browserCreatedUtc > TimeSpan.FromMinutes(_options.BrowserRecycleAfterMinutes))
+        {
+            shouldRecycle = true;
+        }
+
+        if (!shouldRecycle)
+        {
+            return;
+        }
+
+        await ResetAsync(cancellationToken);
     }
 
     private async Task<IBrowser> EnsureBrowserAsync(CancellationToken cancellationToken)
@@ -52,12 +135,13 @@ internal sealed class BrowserPool : IBrowserPool, IAsyncDisposable
                 return _browser;
             }
 
-            _playwright = await Playwright.CreateAsync();
+            _playwright ??= await Playwright.CreateAsync();
             _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
             {
                 Headless = true,
                 Timeout = _options.BrowserLaunchTimeoutMs
             });
+            _browserCreatedUtc = DateTimeOffset.UtcNow;
 
             return _browser;
         }
@@ -67,11 +151,33 @@ internal sealed class BrowserPool : IBrowserPool, IAsyncDisposable
         }
     }
 
-    public async ValueTask DisposeAsync()
+    private async Task DisposeBrowserCoreAsync()
     {
         if (_browser is not null)
         {
-            await _browser.CloseAsync();
+            try
+            {
+                await _browser.CloseAsync();
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        _browser = null;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _startupLock.WaitAsync();
+        try
+        {
+            await DisposeBrowserCoreAsync();
+        }
+        finally
+        {
+            _startupLock.Release();
         }
 
         _playwright?.Dispose();

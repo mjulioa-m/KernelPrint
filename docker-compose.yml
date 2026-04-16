@@ -14,6 +14,11 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:5294
       KernelPrint__Engine__TemplateBaseUrl: http://templates:4173
+      KernelPrint__Engine__Templates__AllowedHosts__0: "templates"
+      KernelPrint__Engine__Templates__AllowedHosts__1: "localhost"
+      KernelPrint__Engine__Templates__AllowedHosts__2: "127.0.0.1"
+      KernelPrint__Security__ApiKey: "${KERNELPRINT_API_KEY:-change-me}"
+      KernelPrint__Security__RequireApiKeyInDevelopment: "true"
     depends_on:
       - templates
     ports:

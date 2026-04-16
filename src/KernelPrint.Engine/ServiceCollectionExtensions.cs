@@ -24,7 +24,8 @@ public static class ServiceCollectionExtensions
             services.Configure<KernelPrintEngineOptions>(_ => { });
         }
 
-        services.TryAddSingleton<IBrowserPool, BrowserPool>();
+        services.TryAddSingleton<BrowserPool>();
+        services.TryAddSingleton<IBrowserPool>(sp => sp.GetRequiredService<BrowserPool>());
         services.AddSingleton<IPrintService, PrintService>();
         return services;
     }
