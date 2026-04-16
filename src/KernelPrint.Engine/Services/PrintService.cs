@@ -47,11 +47,15 @@ internal sealed class PrintService : IPrintService
             await page.EvaluateAsync(
                 """
                 (payload) => {
-                    window.__KERNELPRINT_DATA__ = payload;
-                    window.dispatchEvent(new CustomEvent("kernelprint:data-ready", { detail: payload }));
+                    const data = typeof payload === "string" ? JSON.parse(payload) : payload;
+                    window.__KERNELPRINT_DATA__ = data;
+                    window.dispatchEvent(new CustomEvent("kernelprint:data-ready", { detail: data }));
                 }
                 """,
                 jsonPayload);
+
+            // Allow client-side template rendering to flush DOM updates before printing.
+            await page.WaitForTimeoutAsync(400);
 
             var renderStopwatch = Stopwatch.StartNew();
 
@@ -68,6 +72,9 @@ internal sealed class PrintService : IPrintService
                     """,
                     new { timeoutMs = request.Options.WaitFor.FontsReadyTimeoutMs });
             }
+
+            var renderedRowCount = await page.EvaluateAsync<int>(
+                "() => document.querySelectorAll('tbody tr').length");
 
             var pdfBytes = await page.PdfAsync(new PagePdfOptions
             {
@@ -98,7 +105,8 @@ internal sealed class PrintService : IPrintService
                 Metadata = new Dictionary<string, string>
                 {
                     ["status"] = "ok",
-                    ["template"] = request.TemplateId ?? request.TemplateUrl ?? "unknown"
+                    ["template"] = request.TemplateId ?? request.TemplateUrl ?? "unknown",
+                    ["renderedRows"] = renderedRowCount.ToString()
                 },
                 Timings = new PrintTimings
                 {

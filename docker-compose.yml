@@ -1,0 +1,20 @@
+services:
+  templates:
+    build:
+      context: ./templates/kernelprint-templates/invoice-app
+      dockerfile: Dockerfile
+    ports:
+      - "4173:4173"
+
+  server:
+    build:
+      context: .
+      dockerfile: docker/server.Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5294
+      KernelPrint__Engine__TemplateBaseUrl: http://templates:4173
+    depends_on:
+      - templates
+    ports:
+      - "5294:5294"

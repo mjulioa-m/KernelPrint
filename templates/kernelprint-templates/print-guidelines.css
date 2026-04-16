@@ -1,0 +1,28 @@
+@page {
+  size: A4;
+  margin: 16mm 12mm 16mm 12mm;
+}
+
+/* Utility classes for predictable pagination in Chromium PDF rendering. */
+.kp-break-before-page {
+  break-before: page;
+  page-break-before: always;
+}
+
+.kp-avoid-break-inside {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.kp-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.kp-table thead {
+  display: table-header-group;
+}
+
+.kp-table tfoot {
+  display: table-footer-group;
+}

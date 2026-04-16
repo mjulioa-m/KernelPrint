@@ -2,8 +2,16 @@
 
 Plantillas React/Next para documentos empresariales print-first.
 
-## Próximos pasos (Fase 4)
+## Base print-first incluida
 
-- `invoice`
-- `financial-report`
-- Convención de `schema.json` por template
+- `print-guidelines.css` con utilidades de paginación para Chromium.
+- Clases sugeridas:
+  - `.kp-break-before-page`
+  - `.kp-avoid-break-inside`
+  - `.kp-table` + `thead` repetido
+
+## Próximos pasos (Fase 4 completa)
+
+- `invoice` template
+- `financial-report` template
+- convención de `schema.json` por template
