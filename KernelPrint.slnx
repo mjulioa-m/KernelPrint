@@ -7,4 +7,7 @@
     <Project Path="src/KernelPrint.Engine/KernelPrint.Engine.csproj" />
     <Project Path="src/KernelPrint.Server/KernelPrint.Server.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/KernelPrint.Engine.Tests/KernelPrint.Engine.Tests.csproj" />
+  </Folder>
 </Solution>

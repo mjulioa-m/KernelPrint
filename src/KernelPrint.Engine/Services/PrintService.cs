@@ -188,28 +188,10 @@ internal sealed class PrintService : IPrintService
             throw new ArgumentException($"URL scheme '{uri.Scheme}' is not allowed.", nameof(uri));
         }
 
-        if (!IsHostAllowed(uri.Host, security.AllowedHosts))
+        if (!HostAllowlistMatcher.IsHostAllowed(uri.Host, security.AllowedHosts))
         {
             throw new ArgumentException($"Template host '{uri.Host}' is not allowlisted.", nameof(uri));
         }
-    }
-
-    private static bool IsHostAllowed(string host, IEnumerable<string> allowedHosts)
-    {
-        foreach (var allowed in allowedHosts)
-        {
-            if (string.Equals(allowed, "*", StringComparison.Ordinal))
-            {
-                return true;
-            }
-
-            if (string.Equals(host, allowed, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private static async Task InstallResourceAllowlistAsync(
@@ -257,7 +239,7 @@ internal sealed class PrintService : IPrintService
                     return;
                 }
 
-                if (!allowed.Contains(u.Host))
+                if (!HostAllowlistMatcher.IsHostAllowed(u.Host, allowed))
                 {
                     await route.AbortAsync();
                     return;
@@ -280,7 +262,7 @@ internal sealed class PrintService : IPrintService
                 return;
             }
 
-            if (!allowed.Contains(url.Host))
+            if (!HostAllowlistMatcher.IsHostAllowed(url.Host, allowed))
             {
                 await route.AbortAsync();
                 return;
