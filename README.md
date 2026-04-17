@@ -185,6 +185,10 @@ See `src/KernelPrint.Server/appsettings.json` for defaults and tuning knobs unde
 - `KernelPrint:Admin`
 - `KernelPrint:Profiles`
 
+## Licencia
+
+Este repositorio usa **MPL-2.0** (archivo `LICENSE`). El archivo **`NOTICE`** aclara qué se considera código cubierto y la relación con dependencias de terceros. Si distribuís versiones modificadas de ese código, debéis cumplir la MPL (incluida la publicación/compartición de los archivos MPL cubiertos modificados, según corresponda).
+
 ## Troubleshooting
 
 - **401 Unauthorized**: missing/wrong `X-Api-Key`.

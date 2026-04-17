@@ -1,0 +1,15 @@
+KernelPrint — licensing scope (MPL-2.0)
+
+This repository is licensed under the Mozilla Public License 2.0 (MPL-2.0).
+See the LICENSE file in the repository root for the full license text.
+
+Unless a file or directory explicitly states a different license, all source
+code, build scripts, Docker/Helm packaging, and template sources in this
+repository are intended to be Covered Software under MPL-2.0.
+
+Third-party dependencies (for example NuGet or npm packages consumed as
+libraries) remain under their respective upstream licenses.
+
+If you distribute modified versions of Covered Software from this
+repository, you must comply with MPL-2.0 (including making the modified
+MPL-covered files available under MPL-2.0 as described in the license).
