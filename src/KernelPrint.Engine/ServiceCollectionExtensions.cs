@@ -1,5 +1,6 @@
 using KernelPrint.Engine.Abstractions;
 using KernelPrint.Engine.Configuration;
+using KernelPrint.Engine.Hosting;
 using KernelPrint.Engine.Runtime;
 using KernelPrint.Engine.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,6 +28,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<BrowserPool>();
         services.TryAddSingleton<IBrowserPool>(sp => sp.GetRequiredService<BrowserPool>());
         services.AddSingleton<IPrintService, PrintService>();
+        services.AddHostedService<KernelPrintEngineStartupValidator>();
         return services;
     }
 }

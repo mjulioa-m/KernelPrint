@@ -1,0 +1,21 @@
+replicaCount: 1
+
+image:
+  repository: kernelprint/server
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5294
+
+resources: {}
+
+env:
+  ASPNETCORE_URLS: "http://+:5294"
+  KernelPrint__Engine__TemplateBaseUrl: "http://kernelprint-templates:4173"
+  KernelPrint__Server__ReadinessHttpProbeUrl: "http://kernelprint-templates:4173/"
+
+secrets:
+  apiKey: "change-me"
+  adminApiKey: ""

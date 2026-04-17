@@ -51,4 +51,9 @@ public sealed class KernelPrintTemplateSecurityOptions
     /// When true, block third-party subresources unless the host is allowlisted.
     /// </summary>
     public bool EnforceResourceHostAllowlist { get; set; } = true;
+
+    /// <summary>
+    /// When false (default), wildcard <c>*</c> in <see cref="AllowedHosts"/> is rejected in Production unless explicitly allowed.
+    /// </summary>
+    public bool AllowWildcardHosts { get; set; }
 }

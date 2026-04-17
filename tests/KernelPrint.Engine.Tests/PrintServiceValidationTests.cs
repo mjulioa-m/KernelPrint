@@ -62,6 +62,11 @@ public sealed class PrintServiceValidationTests
         public Task<T> WithPageAsync<T>(Func<IPage, Task<T>> action, CancellationToken cancellationToken)
             => throw new InvalidOperationException("Browser pool should not be used for validation failures.");
 
+        public Task<(bool Acquired, T? Result)> TryWithPageAsync<T>(
+            Func<IPage, Task<T>> action,
+            CancellationToken cancellationToken) where T : class
+            => throw new InvalidOperationException("Browser pool should not be used for validation failures.");
+
         public Task<bool> IsReadyAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
 
         public Task ResetAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

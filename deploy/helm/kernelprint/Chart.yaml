@@ -1,0 +1,6 @@
+apiVersion: v2
+name: kernelprint
+description: Minimal Helm chart for KernelPrint Server + optional template host wiring
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

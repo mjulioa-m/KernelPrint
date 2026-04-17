@@ -28,28 +28,55 @@ public sealed class BrowserPool : IBrowserPool, IAsyncDisposable
         await _semaphore.WaitAsync(cancellationToken);
         try
         {
-            await MaybeRecycleBrowserAsync(cancellationToken);
-
-            var browser = await EnsureBrowserAsync(cancellationToken);
-            await using var context = await browser.NewContextAsync();
-            var page = await context.NewPageAsync();
-
-            try
-            {
-                var result = await action(page);
-                Interlocked.Increment(ref _successfulJobsSinceRecycle);
-                return result;
-            }
-            catch
-            {
-                // A template crash can poison Chromium; recycle defensively.
-                await ResetAsync(cancellationToken);
-                throw;
-            }
+            return await RunWithPageCoreAsync(action, cancellationToken);
         }
         finally
         {
             _semaphore.Release();
+        }
+    }
+
+    public async Task<(bool Acquired, T? Result)> TryWithPageAsync<T>(
+        Func<IPage, Task<T>> action,
+        CancellationToken cancellationToken) where T : class
+    {
+        ArgumentNullException.ThrowIfNull(action);
+
+        if (!await _semaphore.WaitAsync(0, cancellationToken))
+        {
+            return (false, null);
+        }
+
+        try
+        {
+            var result = await RunWithPageCoreAsync(action, cancellationToken);
+            return (true, result);
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    private async Task<T> RunWithPageCoreAsync<T>(Func<IPage, Task<T>> action, CancellationToken cancellationToken)
+    {
+        await MaybeRecycleBrowserAsync(cancellationToken);
+
+        var browser = await EnsureBrowserAsync(cancellationToken);
+        await using var context = await browser.NewContextAsync();
+        var page = await context.NewPageAsync();
+
+        try
+        {
+            var result = await action(page);
+            Interlocked.Increment(ref _successfulJobsSinceRecycle);
+            return result;
+        }
+        catch
+        {
+            // A template crash can poison Chromium; recycle defensively.
+            await ResetAsync(cancellationToken);
+            throw;
         }
     }
 

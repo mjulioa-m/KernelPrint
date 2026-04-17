@@ -4,6 +4,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/KernelPrint.Contracts/KernelPrint.Contracts.csproj" />
+    <Project Path="src/KernelPrint.Client/KernelPrint.Client.csproj" />
     <Project Path="src/KernelPrint.Engine/KernelPrint.Engine.csproj" />
     <Project Path="src/KernelPrint.Server/KernelPrint.Server.csproj" />
   </Folder>

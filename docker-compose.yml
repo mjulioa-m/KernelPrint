@@ -19,6 +19,8 @@ services:
       KernelPrint__Engine__Templates__AllowedHosts__2: "127.0.0.1"
       KernelPrint__Security__ApiKey: "${KERNELPRINT_API_KEY:-change-me}"
       KernelPrint__Security__RequireApiKeyInDevelopment: "true"
+      KernelPrint__Server__ReadinessHttpProbeUrl: "http://templates:4173/"
+      KernelPrint__Admin__ApiKey: "${KERNELPRINT_ADMIN_API_KEY:-}"
     depends_on:
       - templates
     ports:
